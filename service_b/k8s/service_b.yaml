@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-b
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-b
+  template:
+    metadata:
+      labels:
+        app: service-b
+    spec:
+      containers:
+      - name: service-b
+        image: devsecops-service-b:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8002
+        # On s'occupera du volume partagé à l'étape suivante pour ne pas complexifier tout de suite
+        volumeMounts:
+        - name: shared-data
+          mountPath: /data
+      # 2. On définit quel est le disque réel (sur Minikube)
+      volumes:
+      - name: shared-data
+        hostPath:
+          path: /data
+          type: Directory

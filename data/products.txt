@@ -1,0 +1,3 @@
+{"id":"1","nom":"Laptop Pro","type":"Informatique","prix":1200.0}
+{"id":"99","nom":"Test Docker","type":"Test","prix":0.0}
+{"id":"777","nom":"Produit Securisé","type":"Test","prix":99.99}

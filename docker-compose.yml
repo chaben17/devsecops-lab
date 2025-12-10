@@ -1,0 +1,29 @@
+services:
+  service-a:
+    build: ./service_a   # Construit l'image à partir de ce dossier
+    ports:
+      - "8001:8001"      # Ouvre le port 8001 vers l'extérieur
+    volumes:
+      - ./data:/data     # PARTAGE DE FICHIER : le dossier 'data' local devient '/data' dans le conteneur
+
+  service-b:
+    build: ./service_b
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./data:/data     # Le Service B voit le même dossier '/data'
+
+    # Petite astuce : on s'assure que le Service B attend que le A soit prêt (optionnel mais propre)
+    depends_on:
+      - service-a
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    # Optionnel mais pratique : il démarrera après que le réseau soit prêt
+    restart: always
