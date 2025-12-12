@@ -14,8 +14,10 @@ spec:
     spec:
       containers:
       - name: service-a
-        image: devsecops-service-a:latest
-        imagePullPolicy: Never  # <--- LE DÉTAIL CRUCIAL !
+        #image: devsecops-service-a:latest
+        image: ghcr.io/chaben17/devsecops-lab/service-a:latest
+        #imagePullPolicy: Never  # <--- LE DÉTAIL CRUCIAL !
+        imagePullPolicy: Always
         ports:
         - containerPort: 8001
         # On s'occupera du volume partagé à l'étape suivante pour ne pas complexifier tout de suite
