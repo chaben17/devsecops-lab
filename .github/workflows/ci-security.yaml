@@ -38,3 +38,18 @@ jobs:
           exit-code: '1'                 # 1 = Fait échouer le pipeline si failles trouvées
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
+          # 6. Construction de l'image Docker (Build)
+      - name: Build Docker Image Service A
+        run: |
+          cd service_a
+          docker build -t service-a:latest .
+
+      # 7. Scan de l'image Docker avec Trivy
+      - name: Run Trivy container scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'service-a:latest'
+          format: 'table'
+          exit-code: '1'                 # Bloque le pipeline si faille critique
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
