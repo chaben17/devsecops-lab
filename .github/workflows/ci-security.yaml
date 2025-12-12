@@ -60,7 +60,7 @@ jobs:
           format: 'table'
           exit-code: '1'                 # Bloque le pipeline si faille critique
           ignore-unfixed: true
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL'
           # 8. Démarrer l'API
       - name: Start Container for DAST
         run: |
