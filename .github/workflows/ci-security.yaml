@@ -71,5 +71,6 @@ jobs:
       - name: Run OWASP ZAP (DAST)
         uses: zaproxy/action-baseline@v0.12.0
         with:
-          target: 'http://localhost:8001'
+          target: 'http://localhost:8001/products/'
           fail_action: false
+          create-issue: 'false'
