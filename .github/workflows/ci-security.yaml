@@ -28,3 +28,13 @@ jobs:
       # -ll : niveau de sévérité (Medium et High seulement)
       - name: Run Bandit (SAST)
         run: bandit -r .
+        # 5. Analyse des dépendances (SCA) avec Trivy
+      - name: Run Trivy vulnerability scanner (SCA)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'                # fs = filesystem (fichiers)
+          scan-ref: '.'                  # '.' = scanne tout le dossier courant ET les sous-dossiers (service_a/b)
+          format: 'table'
+          exit-code: '1'                 # 1 = Fait échouer le pipeline si failles trouvées
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
