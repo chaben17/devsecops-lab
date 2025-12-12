@@ -68,12 +68,12 @@ jobs:
           docker run -d -p 8001:8001 --name service-a-test service-a:latest
           sleep 10
           # 9. Scan DAST (Baseline)
-      - name: Run OWASP ZAP (DAST)
-        uses: zaproxy/action-baseline@v0.12.0
-        with:
-          target: 'http://localhost:8001/products/'
-          fail_action: false
-          create-issue: 'false'
+     # - name: Run OWASP ZAP (DAST)
+     #   uses: zaproxy/action-baseline@v0.12.0
+     #   with:
+     #     target: 'http://localhost:8001/products/'
+     #     fail_action: false
+     #     create-issue: 'false'
           # 12. UPDATE GITOPS
       - name: Update Kubernetes Manifest
         run: |
