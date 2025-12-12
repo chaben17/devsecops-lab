@@ -61,3 +61,15 @@ jobs:
           exit-code: '1'                 # Bloque le pipeline si faille critique
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
+          # 8. Démarrer l'API
+      - name: Start Container for DAST
+        run: |
+          # Correction : On map 8001 (Externe) vers 8001 (Interne, défini dans ton Dockerfile)
+          docker run -d -p 8001:8001 --name service-a-test service-a:latest
+          sleep 10
+          # 9. Scan DAST (Baseline)
+      - name: Run OWASP ZAP (DAST)
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:8001'
+          fail_action: false
