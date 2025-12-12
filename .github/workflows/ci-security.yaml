@@ -1,0 +1,30 @@
+name: DevSecOps Pipeline
+
+# Le pipeline se lance à chaque "push" sur la branche main
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  security-sast:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Le robot récupère ton code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # 2. On installe Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      # 3. On installe le scanner de sécurité (Bandit)
+      - name: Install Security Tools
+        run: pip install bandit
+
+      # 4. On lance l'analyse
+      # -r : récursif (tout le dossier)
+      # -ll : niveau de sévérité (Medium et High seulement)
+      - name: Run Bandit (SAST)
+        run: bandit -r . -ll
