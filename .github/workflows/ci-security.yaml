@@ -27,4 +27,4 @@ jobs:
       # -r : récursif (tout le dossier)
       # -ll : niveau de sévérité (Medium et High seulement)
       - name: Run Bandit (SAST)
-        run: bandit -r . -ll
+        run: bandit -r .
