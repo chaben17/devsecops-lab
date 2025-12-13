@@ -79,7 +79,7 @@ jobs:
           severity: 'CRITICAL'
           # 8. Démarrer l'API
       - name: Start Container for DAST
-        #run: |
+        run: |
           # Correction : On map 8001 (Externe) vers 8001 (Interne, défini dans ton Dockerfile)
          # docker run -d -p 8001:8001 --name service-a-test service-a:latest
           sleep 10
