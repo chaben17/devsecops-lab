@@ -83,7 +83,7 @@ jobs:
           # Définition du nom de la nouvelle image
           # Attention : remplace 'chaben17' et 'devsecops-lab' par les variables dynamiques si tu préfères
           # ou laisse github.repository_owner
-          IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/service-a:${{ github.sha }}"
+          IMAGE_NAME="ghcr.io/${{ github.repository }}/service-a:${{ github.sha }}"
 
           # --- CORRECTION DU CHEMIN ICI 👇 ---
           # On remplace l'image dans le fichier situé dans le sous-dossier
