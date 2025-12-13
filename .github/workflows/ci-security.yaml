@@ -63,10 +63,10 @@ jobs:
             ghcr.io/${{ github.repository }}/service-a:${{ github.sha }}
             ghcr.io/${{ github.repository }}/service-a:latest
           # 6. Construction de l'image Docker (Build)- local
-      #- name: Build Docker Image Service A
-      #  run: |
-      #    cd service_a
-      #    docker build -t service-a:latest .
+      - name: Build Docker Image Service A
+        run: |
+          cd service_a
+          docker build -t service-a:latest .
 
       # 7. Scan de l'image Docker avec Trivy
       - name: Run Trivy container scanner
