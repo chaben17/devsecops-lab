@@ -21,22 +21,22 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
            verbose: true
-      # 2.1 n installe Python
+      # 3 on installe Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.13'
 
-      # 3. On installe le scanner de sécurité (Bandit)
+      # 4. On installe le scanner de sécurité (Bandit)
       - name: Install Security Tools
         run: pip install bandit
 
-      # 4. On lance l'analyse
+      # 5. On lance l'analyse
       # -r : récursif (tout le dossier)
       # -ll : niveau de sévérité (Medium et High seulement)
       - name: Run Bandit (SAST)
         run: bandit -r .
-        # 5. Analyse des dépendances (SCA) avec Trivy
+        # 6. Analyse des dépendances (SCA) avec Trivy
       - name: Run Trivy vulnerability scanner (SCA)
         uses: aquasecurity/trivy-action@master
         with:
@@ -46,29 +46,14 @@ jobs:
           exit-code: '1'                 # 1 = Fait échouer le pipeline si failles trouvées
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
-        # 10. Login sur GHCR (Indispensable pour pousser)
-      - name: Log in to the Container registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: ./service_a
-          push: true
-          # C'est cette partie qui manquait ou qui était fausse :
-          tags: |
-            ghcr.io/${{ github.repository }}/service-a:${{ github.sha }}
-            ghcr.io/${{ github.repository }}/service-a:latest
-          # 6. Construction de l'image Docker (Build)- local
+        #
+          # 7. Construction de l'image Docker (Build)- local
       - name: Build Docker Image Service A
         run: |
           cd service_a
           docker build -t service-a:latest .
 
-      # 7. Scan de l'image Docker avec Trivy
+      # 8. Scan de l'image Docker avec Trivy
       - name: Run Trivy container scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -77,7 +62,7 @@ jobs:
           exit-code: '1'                 # Bloque le pipeline si faille critique
           ignore-unfixed: true
           severity: 'CRITICAL'
-          # 8. Démarrer l'API
+          # 9. Démarrer l'API
       #- name: Start Container for DAST
       #  run: |
           # Correction : On map 8001 (Externe) vers 8001 (Interne, défini dans ton Dockerfile)
@@ -90,6 +75,23 @@ jobs:
      #     target: 'http://localhost:8001/products/'
      #     fail_action: false
      #     create-issue: 'false'
+      #10. Login sur GHCR (Indispensable pour pousser)
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        #11. build de l'image vers GHCR
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./service_a
+          push: true
+          # C'est cette partie qui manquait ou qui était fausse :
+          tags: |
+            ghcr.io/${{ github.repository }}/service-a:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/service-a:latest
           # 12. UPDATE GITOPS
       - name: Update Kubernetes Manifest
         run: |
