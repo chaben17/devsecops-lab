@@ -12,6 +12,8 @@ spec:
       labels:
         app: service-a
     spec:
+      imagePullSecrets:
+      - name: ghcr-secret
       containers:
       - name: service-a
         #image: devsecops-service-a:latest
