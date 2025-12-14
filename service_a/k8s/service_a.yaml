@@ -17,7 +17,7 @@ spec:
       containers:
       - name: service-a
         #image: devsecops-service-a:latest
-        image: ghcr.io/chaben17/devsecops-lab/service-a:34321aba5f8f1db0ef26383cf71253c8d297687b
+        image: ghcr.io/chaben17/devsecops-lab/service_a:1b8bdc292ac1384989bb0a0d2d84c21e4b67d8d2
         #imagePullPolicy: Never  # <--- LE DÉTAIL CRUCIAL !
         imagePullPolicy: Always
         ports:
