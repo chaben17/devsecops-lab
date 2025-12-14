@@ -1,61 +1,69 @@
-name: DevSecOps Pipeline (Matrix)
+name: DevSecOps Pipeline (Matrix Optimized)
 
 on:
   push:
     branches: [ "main" ]
-    # Le pipeline se lance si on touche à l'un des services ou au pipeline lui-même
     paths:
       - 'service_a/**'
       - 'service_b/**'
       - '.github/workflows/ci-security.yaml'
 
-# Permissions pour Gitleaks, GHCR et le Push Git
 permissions:
   contents: write
   packages: write
   security-events: write
 
 jobs:
+  # ------------------------------------------------------------------
+  # JOB 1 : Sécurité Globale (S'exécute 1 seule fois pour tout le repo)
+  # ------------------------------------------------------------------
+  global-security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Historique complet pour Gitleaks
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Note: J'ai retiré 'verbose: true' car l'action v2 ne le supporte pas en input direct
+        # et cela créait ton Warning.
+
+  # ------------------------------------------------------------------
+  # JOB 2 : Build & Deploy par Service (S'exécute en parallèle pour A et B)
+  # ------------------------------------------------------------------
   build-and-deploy:
+    # Ce job attend que le scan global soit fini et OK
+    needs: global-security-scan
     runs-on: ubuntu-latest
     strategy:
-      # Si Service A échoue, on laisse quand même Service B continuer (false)
       fail-fast: false
       matrix:
-        # 🟢 C'est ici que tu ajoutes tes nouveaux services
         service: [service_a, service_b]
 
     steps:
-      # 1. Checkout
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      # 2. Gitleaks (Scan global)
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          verbose: true
-
-      # 3. Setup Python
+      # --- SAST (Bandit) ---
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.13'
 
-      # 4. Install Bandit
       - name: Install Security Tools
         run: pip install bandit
 
-      # 5. Bandit (Ciblé sur le dossier du service en cours)
       - name: Run Bandit (SAST)
-        # On scanne uniquement le dossier du service concerné
+        # On scanne uniquement le dossier du service
         run: bandit -r ./${{ matrix.service }}
 
-      # 6. Trivy FS (Ciblé sur le dossier du service)
+      # --- SCA (Trivy FS) ---
       - name: Run Trivy vulnerability scanner (SCA)
         uses: aquasecurity/trivy-action@master
         with:
@@ -66,14 +74,13 @@ jobs:
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
 
-      # 7. Build Docker Local (Pour le scan)
+      # --- Build Local ---
       - name: Build Local Image for Scanning
         run: |
           cd ${{ matrix.service }}
-          # On tague l'image avec le nom du service (ex: service-b:latest)
           docker build -t ${{ matrix.service }}:latest .
 
-      # 8. Scan Trivy Image
+      # --- Container Security (Trivy Image) ---
       - name: Run Trivy container scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -83,14 +90,7 @@ jobs:
           ignore-unfixed: true
           severity: 'CRITICAL'
 
-      # 9. (Optionnel) DAST - Commenté comme dans ton fichier
-      # - name: Start Container for DAST
-      #   run: |
-      #     # Note: Il faudrait gérer les ports dynamiquement ici si activé
-      #     docker run -d -p 8001:8001 --name ${{ matrix.service }}-test ${{ matrix.service }}:latest
-      #     sleep 10
-
-      # 10. Login GHCR
+      # --- Push GHCR ---
       - name: Log in to the Container registry
         uses: docker/login-action@v2
         with:
@@ -98,43 +98,32 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 11. Build & Push GHCR
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
-          # On va chercher le Dockerfile dans le bon dossier
           context: ./${{ matrix.service }}
           push: true
-          # On génère les tags dynamiquement (repo/service-a ou repo/service-b)
           tags: |
             ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
             ghcr.io/${{ github.repository }}/${{ matrix.service }}:latest
 
-      # 12. Update Kubernetes Manifest (GitOps)
+      # --- GitOps Update ---
       - name: Update Kubernetes Manifest
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-          # Définition des variables dynamiques
           SERVICE_NAME="${{ matrix.service }}"
           IMAGE_NAME="ghcr.io/${{ github.repository }}/${SERVICE_NAME}:${{ github.sha }}"
-          
-          # On suppose que le fichier s'appelle service_b/k8s/service_b.yaml
           FILE_PATH="${SERVICE_NAME}/k8s/${SERVICE_NAME}.yaml"
 
-          echo "Mise à jour de $FILE_PATH avec l'image $IMAGE_NAME"
+          echo "Mise à jour de $FILE_PATH"
 
-          # Remplacement
           sed -i "s|image: ghcr.io/.*|image: $IMAGE_NAME|g" $FILE_PATH
           
-          # Vérif
-          cat $FILE_PATH | grep image:
-
-          # Gestion des conflits potentiels (Pull avant Push)
+          # Gestion du pull/rebase pour éviter les conflits entre les 2 jobs
           git pull origin main --rebase || true
 
-          # Commit & Push
           git add $FILE_PATH
-          git commit -m "Update ${SERVICE_NAME} image to ${{ github.sha }}" || echo "No changes to commit"
+          git commit -m "Update ${SERVICE_NAME} image to ${{ github.sha }}" || echo "No changes"
           git push
