@@ -1,116 +1,140 @@
-name: DevSecOps Pipeline
+name: DevSecOps Pipeline (Matrix)
 
-# Le pipeline se lance à chaque "push" sur la branche main
 on:
   push:
     branches: [ "main" ]
+    # Le pipeline se lance si on touche à l'un des services ou au pipeline lui-même
+    paths:
+      - 'service_a/**'
+      - 'service_b/**'
+      - '.github/workflows/ci-security.yaml'
+
+# Permissions pour Gitleaks, GHCR et le Push Git
+permissions:
+  contents: write
+  packages: write
+  security-events: write
 
 jobs:
-  security-sast:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    strategy:
+      # Si Service A échoue, on laisse quand même Service B continuer (false)
+      fail-fast: false
+      matrix:
+        # 🟢 C'est ici que tu ajoutes tes nouveaux services
+        service: [service_a, service_b]
+
     steps:
-      # 1. Le robot récupère ton code
+      # 1. Checkout
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # IMPORTANT : Récupère tout l'historique Git pour Gitleaks
-      #2.0 secret Scanning avec Gitleaks
+          fetch-depth: 0
+
+      # 2. Gitleaks (Scan global)
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-           verbose: true
-      # 3 on installe Python
+          verbose: true
+
+      # 3. Setup Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.13'
 
-      # 4. On installe le scanner de sécurité (Bandit)
+      # 4. Install Bandit
       - name: Install Security Tools
         run: pip install bandit
 
-      # 5. On lance l'analyse
-      # -r : récursif (tout le dossier)
-      # -ll : niveau de sévérité (Medium et High seulement)
+      # 5. Bandit (Ciblé sur le dossier du service en cours)
       - name: Run Bandit (SAST)
-        run: bandit -r .
-        # 6. Analyse des dépendances (SCA) avec Trivy
+        # On scanne uniquement le dossier du service concerné
+        run: bandit -r ./${{ matrix.service }}
+
+      # 6. Trivy FS (Ciblé sur le dossier du service)
       - name: Run Trivy vulnerability scanner (SCA)
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'                # fs = filesystem (fichiers)
-          scan-ref: '.'                  # '.' = scanne tout le dossier courant ET les sous-dossiers (service_a/b)
+          scan-type: 'fs'
+          scan-ref: './${{ matrix.service }}'
           format: 'table'
-          exit-code: '1'                 # 1 = Fait échouer le pipeline si failles trouvées
+          exit-code: '1'
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
-        #
-          # 7. Construction de l'image Docker (Build)- local
-      - name: Build Docker Image Service A
-        run: |
-          cd service_a
-          docker build -t service-a:latest .
 
-      # 8. Scan de l'image Docker avec Trivy
+      # 7. Build Docker Local (Pour le scan)
+      - name: Build Local Image for Scanning
+        run: |
+          cd ${{ matrix.service }}
+          # On tague l'image avec le nom du service (ex: service-b:latest)
+          docker build -t ${{ matrix.service }}:latest .
+
+      # 8. Scan Trivy Image
       - name: Run Trivy container scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'service-a:latest'
+          image-ref: '${{ matrix.service }}:latest'
           format: 'table'
-          exit-code: '1'                 # Bloque le pipeline si faille critique
+          exit-code: '1'
           ignore-unfixed: true
           severity: 'CRITICAL'
-          # 9. Démarrer l'API
-      #- name: Start Container for DAST
-      #  run: |
-          # Correction : On map 8001 (Externe) vers 8001 (Interne, défini dans ton Dockerfile)
-         # docker run -d -p 8001:8001 --name service-a-test service-a:latest
-      #    sleep 10
-          # 9. Scan DAST (Baseline)
-     # - name: Run OWASP ZAP (DAST)
-     #   uses: zaproxy/action-baseline@v0.12.0
-     #   with:
-     #     target: 'http://localhost:8001/products/'
-     #     fail_action: false
-     #     create-issue: 'false'
-      #10. Login sur GHCR (Indispensable pour pousser)
+
+      # 9. (Optionnel) DAST - Commenté comme dans ton fichier
+      # - name: Start Container for DAST
+      #   run: |
+      #     # Note: Il faudrait gérer les ports dynamiquement ici si activé
+      #     docker run -d -p 8001:8001 --name ${{ matrix.service }}-test ${{ matrix.service }}:latest
+      #     sleep 10
+
+      # 10. Login GHCR
       - name: Log in to the Container registry
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        #11. build de l'image vers GHCR
+
+      # 11. Build & Push GHCR
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
-          context: ./service_a
+          # On va chercher le Dockerfile dans le bon dossier
+          context: ./${{ matrix.service }}
           push: true
-          # C'est cette partie qui manquait ou qui était fausse :
+          # On génère les tags dynamiquement (repo/service-a ou repo/service-b)
           tags: |
-            ghcr.io/${{ github.repository }}/service-a:${{ github.sha }}
-            ghcr.io/${{ github.repository }}/service-a:latest
-          # 12. UPDATE GITOPS
+            ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/${{ matrix.service }}:latest
+
+      # 12. Update Kubernetes Manifest (GitOps)
       - name: Update Kubernetes Manifest
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-          # Définition du nom de la nouvelle image
-          # Attention : remplace 'chaben17' et 'devsecops-lab' par les variables dynamiques si tu préfères
-          # ou laisse github.repository_owner
-          IMAGE_NAME="ghcr.io/${{ github.repository }}/service-a:${{ github.sha }}"
+          # Définition des variables dynamiques
+          SERVICE_NAME="${{ matrix.service }}"
+          IMAGE_NAME="ghcr.io/${{ github.repository }}/${SERVICE_NAME}:${{ github.sha }}"
+          
+          # On suppose que le fichier s'appelle service_b/k8s/service_b.yaml
+          FILE_PATH="${SERVICE_NAME}/k8s/${SERVICE_NAME}.yaml"
 
-          # --- CORRECTION DU CHEMIN ICI 👇 ---
-          # On remplace l'image dans le fichier situé dans le sous-dossier
-          sed -i "s|image: ghcr.io/.*|image: $IMAGE_NAME|g" service_a/k8s/service_a.yaml
+          echo "Mise à jour de $FILE_PATH avec l'image $IMAGE_NAME"
 
-          # Vérification
-          cat service_a/k8s/service_a.yaml | grep image:
+          # Remplacement
+          sed -i "s|image: ghcr.io/.*|image: $IMAGE_NAME|g" $FILE_PATH
+          
+          # Vérif
+          cat $FILE_PATH | grep image:
 
-          # Commit et Push sur le bon fichier
-          git add service_a/k8s/service_a.yaml
-          git commit -m "Update deployment image to ${{ github.sha }}"
+          # Gestion des conflits potentiels (Pull avant Push)
+          git pull origin main --rebase || true
+
+          # Commit & Push
+          git add $FILE_PATH
+          git commit -m "Update ${SERVICE_NAME} image to ${{ github.sha }}" || echo "No changes to commit"
           git push
