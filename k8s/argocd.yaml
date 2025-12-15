@@ -1,0 +1,57 @@
+# Configuration "Low Resources" pour ArgoCD
+
+# 1. Le Contrôleur (Le cerveau)
+controller:
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# 2. Le Serveur (Interface Web / API)
+server:
+  replicas: 1 # On force à 1 seul pod
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+
+# 3. Le Repo Server (Git Clone)
+repoServer:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# 4. Redis (Cache)
+redis:
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# 5. Dex (Auth)
+dex:
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# Désactiver la haute disponibilité (HA) inutile en Lab
+ha:
+  enabled: false
