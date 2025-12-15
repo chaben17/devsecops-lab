@@ -14,7 +14,7 @@ kind: Deployment
 metadata:
   name: keycloak
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: keycloak
@@ -36,7 +36,7 @@ spec:
           value: "edge"
           # 👇 AJOUTE CETTE LIGNE POUR BRIDER JAVA
         - name: JAVA_OPTS_APPEND
-          value: "-Xms128m -Xmx256m"
+          value: "-Xms128m -Xmx256m -XX:MaxMetaspaceSize=96m"
 
         # 👇 LIMITES ULTRA STRICTES
         resources:
