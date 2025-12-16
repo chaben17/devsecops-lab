@@ -12,10 +12,14 @@ spec:
       labels:
         app: service-b
     spec:
+      #imagePullSecrets:
+      #- name: ghcr-secret
       containers:
       - name: service-b
-        image: devsecops-service-b:latest
-        imagePullPolicy: Never
+        image: devsecops-service-b:local
+        #image: ghcr.io/chaben17/devsecops-lab/service_b:latest
+        imagePullPolicy: Never  # <--- LE DÉTAIL CRUCIAL !
+        #imagePullPolicy: Always
         ports:
         - containerPort: 8002
         # On s'occupera du volume partagé à l'étape suivante pour ne pas complexifier tout de suite
