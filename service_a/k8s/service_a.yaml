@@ -16,7 +16,7 @@ spec:
       #- name: ghcr-secret
       containers:
       - name: service-a
-        image: devsecops-service-a:local
+        image: service-a:local
         #image: ghcr.io/chaben17/devsecops-lab/service_a:a94b4b750d19b1b080df75ea7a0560ce0bf8857c
         imagePullPolicy: Never  # <--- LE DÉTAIL CRUCIAL !
         #imagePullPolicy: Always
