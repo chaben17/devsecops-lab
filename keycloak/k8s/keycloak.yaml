@@ -35,17 +35,6 @@ spec:
         - name: KC_PROXY
           value: "edge"
           # 👇 AJOUTE CETTE LIGNE POUR BRIDER JAVA
-        - name: JAVA_OPTS_APPEND
-          value: "-Xms128m -Xmx256m -XX:MaxMetaspaceSize=96m"
-
-        # 👇 LIMITES ULTRA STRICTES
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "250m"
-          limits:
-            memory: "450Mi" # Si ça dépasse 450Mo, on coupe.
-            cpu: "500m"
         ports:
         - containerPort: 8080
         # 🟢 ON ATTACHE LE DISQUE ICI
