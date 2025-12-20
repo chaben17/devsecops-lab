@@ -19,7 +19,7 @@ app.add_middleware(
 
 # 1. Configuration OIDC
 # Remplacez ceci par la longue chaîne que vous avez copiée !
-PUBLIC_KEY_STR = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzM9ONo/+B47DNuL9uj7M7JBbLFDnC/PsUCrCeJQB+yFTpk1wEAQT4umvp0solPLXNaqk4vRjzOt1dbfsPyIzFoOEDFv58x9iSod6pdhjQEXwlWJG+W6io3Af9A2rcr8lXhSmgFpMC0oZZj3ZXCGCxJZm8kZEA85dgahX1Wp2RNAhh7SOKe5ZjN7ejSSramZlaeXTdtT2LVaCkzE5y58l9Pp9uCOn/85IE4R/1lfB2h/7KSYr80H1Uup4K7MyqzEbKDlpPdi+QTHefy1/yz/mdLuu6RwwO0fzGCp8mPs7SMGSY+tFIkcixDbLLil5TB420KJXyXlzzyMVHzOjcNpniQIDAQAB" # <--- COLLEZ VOTRE CLÉ ICI (gardez les guillemets)
+PUBLIC_KEY_STR = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAz7x2OmFMcM0Voo4jpT4ZvZJGHjXGuYlp/Cll3RWIfRLDwt4RHs3hcBrndshI0eEPOVQj/rxtEiSUVwtj5tKXp33VA1NtfUImsAk/FPDWqzaW04e6IO0UmBnwp6qfQNqAxeNCy4xbQHCpQ+fjl2IRdy4L8ZCc53Z6/Bq5dMzPPVfVr5P/MEPi+hY3Na9eDzh4Q+0o/RndAXU+37ycXxh/VllGLn9cbulrBV+CV2iE4Sw72RCXXC1hi1II+olZcOBj2fI3+EfeR4F9Lj4s6MumEmI1SZG9CvInVLI1GZxGNp4alQcc19nn5M3FLnazS4wssBL0F7L8vTijDAfYwf1XYQIDAQAB" # <--- COLLEZ VOTRE CLÉ ICI (gardez les guillemets)
 
 # On formate la clé pour qu'elle soit valide pour la librairie
 PUBLIC_KEY = f"-----BEGIN PUBLIC KEY-----\n{PUBLIC_KEY_STR}\n-----END PUBLIC KEY-----"

@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: keycloak-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:latest
+        args: ["start-dev"]
+        env:
+        - name: KEYCLOAK_ADMIN
+          value: "admin"
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          value: "admin"
+        - name: KC_PROXY
+          value: "edge"
+          # 👇 AJOUTE CETTE LIGNE POUR BRIDER JAVA
+        - name: JAVA_OPTS_APPEND
+          value: "-Xms128m -Xmx256m -XX:MaxMetaspaceSize=96m"
+
+        # 👇 LIMITES ULTRA STRICTES
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
+          limits:
+            memory: "450Mi" # Si ça dépasse 450Mo, on coupe.
+            cpu: "500m"
+        ports:
+        - containerPort: 8080
+        # 🟢 ON ATTACHE LE DISQUE ICI
+        volumeMounts:
+        - name: keycloak-storage
+          mountPath: /opt/keycloak/data
+      # 🟢 ON DÉFINIT LE DISQUE ICI
+      volumes:
+      - name: keycloak-storage
+        persistentVolumeClaim:
+          claimName: keycloak-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080

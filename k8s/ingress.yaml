@@ -3,6 +3,7 @@ kind: Ingress
 metadata:
   name: devsecops-ingress
   annotations:
+    # Réécrit l'URL pour enlever le préfixe (/service-a/foo -> /foo)
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
 spec:
@@ -10,29 +11,30 @@ spec:
   - host: devsecops.local
     http:
       paths:
-      # Route pour le Service A
+      # --- Route API Service A (Reste inchangée) ---
       - path: /service-a(/|$)(.*)
-        pathType: ImplementationSpecific  # <--- CHANGEMENT ICI
+        pathType: ImplementationSpecific
         backend:
           service:
             name: service-a
             port:
               number: 8001
       
-      # Route pour le Service B
+      # --- Route API Service B (Reste inchangée) ---
       - path: /service-b(/|$)(.*)
-        pathType: ImplementationSpecific  # <--- CHANGEMENT ICI
+        pathType: ImplementationSpecific
         backend:
           service:
             name: service-b
             port:
               number: 8002
 
-      # Route par défaut vers Keycloak
+      # --- Route Principale pour le Frontend (NOUVEAU) ---
+      # Avant c'était Keycloak, maintenant c'est ton site Web
       - path: /()(.*)
-        pathType: ImplementationSpecific  # <--- CHANGEMENT ICI
+        pathType: ImplementationSpecific
         backend:
           service:
-            name: keycloak
+            name: frontend  # Assure-toi que ton Service s'appelle bien "frontend"
             port:
-              number: 8080
+              number: 80    # Le port du Service Frontend (pas du conteneur)

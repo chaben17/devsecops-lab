@@ -1,0 +1,116 @@
+name: DevSecOps Pipeline
+
+# Le pipeline se lance à chaque "push" sur la branche main
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  security-sast:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Le robot récupère ton code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # IMPORTANT : Récupère tout l'historique Git pour Gitleaks
+      #2.0 secret Scanning avec Gitleaks
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+           verbose: true
+      # 3 on installe Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      # 4. On installe le scanner de sécurité (Bandit)
+      - name: Install Security Tools
+        run: pip install bandit
+
+      # 5. On lance l'analyse
+      # -r : récursif (tout le dossier)
+      # -ll : niveau de sévérité (Medium et High seulement)
+      - name: Run Bandit (SAST)
+        run: bandit -r .
+        # 6. Analyse des dépendances (SCA) avec Trivy
+      - name: Run Trivy vulnerability scanner (SCA)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'                # fs = filesystem (fichiers)
+          scan-ref: '.'                  # '.' = scanne tout le dossier courant ET les sous-dossiers (service_a/b)
+          format: 'table'
+          exit-code: '1'                 # 1 = Fait échouer le pipeline si failles trouvées
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+        #
+          # 7. Construction de l'image Docker (Build)- local
+      - name: Build Docker Image Service A
+        run: |
+          cd service_a
+          docker build -t service-a:latest .
+
+      # 8. Scan de l'image Docker avec Trivy
+      - name: Run Trivy container scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'service-a:latest'
+          format: 'table'
+          exit-code: '1'                 # Bloque le pipeline si faille critique
+          ignore-unfixed: true
+          severity: 'CRITICAL'
+          # 9. Démarrer l'API
+      #- name: Start Container for DAST
+      #  run: |
+          # Correction : On map 8001 (Externe) vers 8001 (Interne, défini dans ton Dockerfile)
+         # docker run -d -p 8001:8001 --name service-a-test service-a:latest
+      #    sleep 10
+          # 9. Scan DAST (Baseline)
+     # - name: Run OWASP ZAP (DAST)
+     #   uses: zaproxy/action-baseline@v0.12.0
+     #   with:
+     #     target: 'http://localhost:8001/products/'
+     #     fail_action: false
+     #     create-issue: 'false'
+      #10. Login sur GHCR (Indispensable pour pousser)
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        #11. build de l'image vers GHCR
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./service_a
+          push: true
+          # C'est cette partie qui manquait ou qui était fausse :
+          tags: |
+            ghcr.io/${{ github.repository }}/service-a:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/service-a:latest
+          # 12. UPDATE GITOPS
+      - name: Update Kubernetes Manifest
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+          # Définition du nom de la nouvelle image
+          # Attention : remplace 'chaben17' et 'devsecops-lab' par les variables dynamiques si tu préfères
+          # ou laisse github.repository_owner
+          IMAGE_NAME="ghcr.io/${{ github.repository }}/service-a:${{ github.sha }}"
+
+          # --- CORRECTION DU CHEMIN ICI 👇 ---
+          # On remplace l'image dans le fichier situé dans le sous-dossier
+          sed -i "s|image: ghcr.io/.*|image: $IMAGE_NAME|g" service_a/k8s/service_a.yaml
+
+          # Vérification
+          cat service_a/k8s/service_a.yaml | grep image:
+
+          # Commit et Push sur le bon fichier
+          git add service_a/k8s/service_a.yaml
+          git commit -m "Update deployment image to ${{ github.sha }}"
+          git push

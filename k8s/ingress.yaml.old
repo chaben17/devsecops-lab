@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: devsecops-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  rules:
+  - host: devsecops.local
+    http:
+      paths:
+      # Route pour le Service A
+      - path: /service-a(/|$)(.*)
+        pathType: ImplementationSpecific  # <--- CHANGEMENT ICI
+        backend:
+          service:
+            name: service-a
+            port:
+              number: 8001
+      
+      # Route pour le Service B
+      - path: /service-b(/|$)(.*)
+        pathType: ImplementationSpecific  # <--- CHANGEMENT ICI
+        backend:
+          service:
+            name: service-b
+            port:
+              number: 8002
+
+      # Route par défaut vers Keycloak
+      - path: /()(.*)
+        pathType: ImplementationSpecific  # <--- CHANGEMENT ICI
+        backend:
+          service:
+            name: keycloak
+            port:
+              number: 8080

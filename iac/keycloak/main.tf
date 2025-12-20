@@ -5,83 +5,41 @@ terraform {
       version = ">= 4.0.0"
     }
   }
-  # On garde le backend Kubernetes pour que ton GitHub Actions fonctionne
-  backend "kubernetes" {
-    secret_suffix    = "state"
-    config_path      = "~/.kube/config"
-    namespace        = "default"
-  }
 }
 
-# --- VARIABLES ---
-variable "keycloak_password" {
-  type      = string
-  sensitive = true
-}
-
-variable "keycloak_url" {
-  type    = string
-  default = "http://localhost:8080"
-}
-
-# --- PROVIDER ---
 provider "keycloak" {
   client_id     = "admin-cli"
   username      = "admin"
-  password      = var.keycloak_password
-  url           = var.keycloak_url
+  password      = "admin"
+  url           = "http://devsecops.local:8080"
 }
 
-# --- 1. REALM ---
-resource "keycloak_realm" "devsecops_realm" {
-  realm        = "devsecops"
-  enabled      = true
-  display_name = "DevSecOps Lab Realm"
+# 1. On récupère le Realm
+data "keycloak_realm" "realm" {
+  realm = "devsecops"
 }
 
-# --- 2. CLIENT ---
-resource "keycloak_openid_client" "webapp_client" {
-  realm_id  = keycloak_realm.devsecops_realm.id
-  client_id = "myclient"
-
-  name    = "My Client App"
-  enabled = true
-
-  access_type                  = "PUBLIC"
-  standard_flow_enabled        = true
-  direct_access_grants_enabled = true
-
-  valid_redirect_uris = [
-    "http://devsecops.local/*",
-    "http://localhost:8080/*"
-  ]
-  web_origins = ["+"]
+# 2. On récupère le Rôle "writer" (CORRECTION ICI)
+data "keycloak_role" "writer_role" {
+  realm_id  = data.keycloak_realm.realm.id
+  # client_id = ...  <-- J'AI SUPPRIMÉ CETTE LIGNE
+  # En l'absence de client_id, Terraform cherche dans les "Realm Roles"
+  name      = "writer"
 }
 
-# --- 3. ROLES ---
-resource "keycloak_role" "role_reader" {
-  realm_id    = keycloak_realm.devsecops_realm.id
-  name        = "reader"
-  description = "Role lecture seule"
-}
+# ---------------------------------------------------------
+# CRÉATION DES RESSOURCES
+# ---------------------------------------------------------
 
-resource "keycloak_role" "role_writer" {
-  realm_id    = keycloak_realm.devsecops_realm.id
-  name        = "writer"
-  description = "Role ecriture"
-}
-
-# --- 4. UTILISATEURS ---
-
-# User A (sera Writer)
-resource "keycloak_user" "user_a" {
-  realm_id = keycloak_realm.devsecops_realm.id
-  username = "user_a"
-  enabled  = true
-
-  email      = "usera@devsecops.local"
+# 3. Création de l'utilisateur
+resource "keycloak_user" "user3" {
+  realm_id   = data.keycloak_realm.realm.id
+  username   = "user3"
+  enabled    = true
+  email      = "user3@devsecops.local"
+  email_verified = true
   first_name = "User"
-  last_name  = "A"
+  last_name  = "Three"
 
   initial_password {
     value     = "1234"
@@ -89,40 +47,12 @@ resource "keycloak_user" "user_a" {
   }
 }
 
-# User B (sera Reader)
-resource "keycloak_user" "user_b" {
-  realm_id = keycloak_realm.devsecops_realm.id
-  username = "user_b"
-  enabled  = true
-
-  email      = "userb@devsecops.local"
-  first_name = "User"
-  last_name  = "B"
-
-  initial_password {
-    value     = "1234"
-    temporary = false
-  }
-}
-
-# --- 5. ASSIGNATION DES ROLES ---
-
-# User A -> Writer
-resource "keycloak_user_roles" "user_a_roles" {
-  realm_id = keycloak_realm.devsecops_realm.id
-  user_id  = keycloak_user.user_a.id
+# 4. Assignation du rôle à l'utilisateur
+resource "keycloak_user_roles" "user3_roles" {
+  realm_id = data.keycloak_realm.realm.id
+  user_id  = keycloak_user.user3.id
 
   role_ids = [
-    keycloak_role.role_writer.id
-  ]
-}
-
-# User B -> Reader
-resource "keycloak_user_roles" "user_b_roles" {
-  realm_id = keycloak_realm.devsecops_realm.id
-  user_id  = keycloak_user.user_b.id
-
-  role_ids = [
-    keycloak_role.role_reader.id
+    data.keycloak_role.writer_role.id
   ]
 }
