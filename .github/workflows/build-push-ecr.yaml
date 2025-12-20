@@ -29,15 +29,15 @@ jobs:
         IMAGE_TAG: ${{ github.sha }} # On utilise le hash du commit comme version unique
       run: |
         # Construction et Push du Service A
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:service_a-$IMAGE_TAG ./service_a
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:service_a-$IMAGE_TAG
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:service-a-latest ./service_a
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:service-a-latest
         
         # Construction et Push du Service B (si tu en as un)
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:service_b-$IMAGE_TAG ./service_b
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:service_b-$IMAGE_TAG
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:service-b-latest ./service_b
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:service-b-latest
         
         # Construction et Push du Frontend
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:frontend-$IMAGE_TAG ./frontend
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:frontend-$IMAGE_TAG
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:frontend-latest ./frontend
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:frontend-latest
         
-        echo "::notice::Images pushed with tag: $IMAGE_TAG"
+        echo "::notice::Images pushed with tag: latest"
