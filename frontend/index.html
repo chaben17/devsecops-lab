@@ -20,7 +20,7 @@
 
     <div id="login-section" class="box">
         <h2>🔐 Connexion (SSO)</h2>
-        <input type="text" id="username" placeholder="Utilisateur (ex: user2)" value="user2_r">
+        <input type="text" id="username" placeholder="Utilisateur (ex: user2)" value="user2">
         <input type="password" id="password" placeholder="Mot de passe" value="1234">
         <button onclick="login()">Se connecter</button>
         <p id="login-status"></p>
@@ -33,11 +33,11 @@
         
         <hr>
 
-        <h3>Lecture (Service B - Reader)</h3>
+        <h3>Lecture (Service B)</h3>
         <input type="text" id="prod-id" placeholder="ID Produit (ex: 178)" value="178">
         <button onclick="readProduct()">🔍 Lire le produit</button>
 
-        <h3>Écriture (Service A - Writer)</h3>
+        <h3>Écriture (Service A)</h3>
         <input type="text" id="new-prod-id" placeholder="ID" value="999">
         <input type="text" id="new-prod-name" placeholder="Nom" value="Produit Web">
         <button onclick="addProduct()">➕ Ajouter le produit</button>
@@ -52,16 +52,12 @@
     <script>
         let accessToken = null;
 
-        // --- CONFIGURATION MISE À JOUR POUR TON LAB ---
-        
-        // 1. URL Keycloak (Attention au /auth ajouté ici !)
+        // URL Keycloak via le Domaine Ingress
         const KEYCLOAK_URL = "https://devsecopslab.ddns.net/auth/realms/devsecops/protocol/openid-connect/token";
         
-        // 2. URLs des Services via Ingress
+        // URLs des Services via le Domaine Ingress (Routing par chemin)
         const SERVICE_A_URL = "https://devsecopslab.ddns.net/service-a/products";
-        const SERVICE_B_URL = "https://devsecopslab.ddns.net/service-b/products";
-
-        // ----------------------------------------------
+        const SERVICE_B_URL = "https://devsecopslab.ddns.net/service-b/products/";
 
         async function login() {
             const user = document.getElementById('username').value;
@@ -90,13 +86,14 @@
                     status.innerHTML = `<span class="error">Erreur: ${data.error_description || 'Login failed'}</span>`;
                 }
             } catch (error) {
-                status.innerHTML = `<span class="error">Erreur Réseau : Vérifiez l'URL et le statut de Keycloak.<br>${error.message}</span>`;
+                status.innerHTML = `<span class="error">Erreur Réseau : Vérifiez votre fichier hosts et le tunnel Ingress.<br>${error.message}</span>`;
                 console.error(error);
             }
         }
 
         async function readProduct() {
             const id = document.getElementById('prod-id').value;
+            // Appel vers Service B via Ingress
             callApi(`${SERVICE_B_URL}${id}`, 'GET');
         }
 
@@ -104,6 +101,7 @@
             const id = document.getElementById('new-prod-id').value;
             const name = document.getElementById('new-prod-name').value;
             const body = { id: id, nom: name, type: "Web", prix: 50.0 };
+            // Appel vers Service A via Ingress
             callApi(SERVICE_A_URL, 'POST', body);
         }
 
@@ -134,7 +132,7 @@
                 }
 
             } catch (error) {
-                responseArea.innerText = "Erreur technique : " + error.message;
+                responseArea.innerText = "Erreur technique : " + error.message + "\n(Vérifiez que le tunnel Ingress est ouvert)";
                 responseArea.style.borderLeftColor = "red";
             }
         }
@@ -143,6 +141,7 @@
             document.getElementById('login-section').classList.add('hidden');
             document.getElementById('dashboard-section').classList.remove('hidden');
             document.getElementById('user-display').innerText = user;
+            // Affichage du token complet comme demandé
             document.getElementById('token-display').innerText = accessToken;
         }
 
