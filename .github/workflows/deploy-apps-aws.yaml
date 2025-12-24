@@ -1,0 +1,67 @@
+name: Deploy Apps to K3s
+
+on:
+  # 1. Se déclenche si tu touches à la config Kubernetes (ça, ça ne change pas)
+  push:
+    paths:
+      - 'k3s-aws/apps-deploy.yaml'
+
+  # 2. Se déclenche AUTOMATIQUEMENT quand le workflow de Build a fini
+  workflow_run:
+    workflows: ["Build and Push to ECR"] # <--- VOIR NOTE CI-DESSOUS
+    branches: [main]
+    types: 
+      - completed
+
+jobs:
+  deploy:
+    # Condition de sécurité : On ne déploie que si le Build a RÉUSSI (pas s'il a échoué)
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: self-hosted
+    
+    steps:
+      # ... (Le reste des étapes reste identique : checkout, login aws, kubectl apply...
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 1. Connexion AWS (Nécesaire pour générer le mot de passe ECR)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # 2. Rafraîchissement du Secret Kubernetes (CRUCIAL)
+      # On supprime et recrée le secret "ecr-secret" utilisé dans ton YAML (imagePullSecrets)
+      - name: Update ECR Secret in K3s
+        run: |
+          kubectl delete secret ecr-secret --ignore-not-found
+          
+          kubectl create secret docker-registry ecr-secret \
+            --docker-server=${{ steps.login-ecr.outputs.registry }} \
+            --docker-username=AWS \
+            --docker-password=$(aws ecr get-login-password --region us-east-1)
+
+      # 3. Application de la configuration
+      - name: Apply Kubernetes Manifests
+        run: kubectl apply -f k3s-aws/apps-deploy.yaml
+
+      # 4. Force Update (Car tu utilises "latest")
+      # Sans ça, K3s ne verra pas de changement et ne téléchargera pas la nouvelle image
+      - name: Force Restart Deployments
+        run: |
+          kubectl rollout restart deployment/service-a
+          kubectl rollout restart deployment/service-b
+          kubectl rollout restart deployment/frontend
+          
+      # 5. Vérification du déploiement
+      - name: Verify Rollout Status
+        run: |
+          kubectl rollout status deployment/service-a
+          kubectl rollout status deployment/service-b
+          kubectl rollout status deployment/frontend

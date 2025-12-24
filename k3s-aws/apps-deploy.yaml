@@ -1,0 +1,135 @@
+# --- Service A ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-a
+  labels:
+    app: service-a
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-a
+  template:
+    metadata:
+      labels:
+        app: service-a
+    spec:
+      imagePullSecrets:
+      - name: ecr-secret
+      containers:
+      - name: service-a
+        # L'image sur ECR (taggée latest par GitHub Actions)
+        image: 473522039583.dkr.ecr.us-east-1.amazonaws.com/devsecops-lab:service-a-latest
+        imagePullPolicy: Always # Important : Force K3s à re-télécharger l'image à chaque redémarrage
+        ports:
+        - containerPort: 8001 # Port standard Flask/Python
+
+        volumeMounts:
+        - name: data-storage
+          mountPath: /data
+      volumes:
+      - name: data-storage
+        persistentVolumeClaim:
+         claimName: service-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-a
+spec:
+  selector:
+    app: service-a
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8001
+
+# --- Service B ---
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-b
+  labels:
+    app: service-b
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-b
+  template:
+    metadata:
+      labels:
+        app: service-b
+    spec:
+      imagePullSecrets:
+      - name: ecr-secret
+      containers:
+      - name: service-b
+        image: 473522039583.dkr.ecr.us-east-1.amazonaws.com/devsecops-lab:service-b-latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8002
+        volumeMounts:
+        - name: shared-data
+          mountPath: /data
+
+      volumes:
+      - name: shared-data
+        persistentVolumeClaim:
+          # 👇 ON RÉUTILISE LE PVC DU SERVICE A
+          claimName: service-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-b
+spec:
+  selector:
+    app: service-b
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8002
+
+# --- Frontend ---
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: 473522039583.dkr.ecr.us-east-1.amazonaws.com/devsecops-lab:frontend-latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+      imagePullSecrets:
+      - name: ecr-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  selector:
+    app: frontend
+  type: LoadBalancer # C'est lui qui sera accessible depuis Internet
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+
