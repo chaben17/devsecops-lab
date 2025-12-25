@@ -26,3 +26,7 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
         IMAGE_TAG: ${{ github.sha }} # On utilise le hash du commit comme version unique
+      run: |
+        # Construction et Push du Service A
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:service-a-latest ./service_a
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:service-a-latest
