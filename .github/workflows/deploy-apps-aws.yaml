@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - 'k3s-aws/apps-deploy.yaml'
+      - 'k3s-aws/ingress-apps.yaml'
 
   # 2. Se déclenche AUTOMATIQUEMENT quand le workflow de Build a fini
   workflow_run:
@@ -50,6 +51,7 @@ jobs:
       # 3. Application de la configuration
       - name: Apply Kubernetes Manifests
         run: kubectl apply -f k3s-aws/apps-deploy.yaml
+        run: kubectl apply -f k3s-aws/ingress-apps.yaml
 
       # 4. Force Update (Car tu utilises "latest")
       # Sans ça, K3s ne verra pas de changement et ne téléchargera pas la nouvelle image

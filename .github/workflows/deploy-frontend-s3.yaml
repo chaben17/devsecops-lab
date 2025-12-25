@@ -1,0 +1,40 @@
+name: Deploy Frontend to S3
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**' # Se lance uniquement si on touche au site web
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # On utilise les runners GitHub (plus rapide pour S3)
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # SI TON PROJET NÉCESSITE UN BUILD (React/Vue/Angular), décommente ceci :
+      # - name: Setup Node.js
+      #   uses: actions/setup-node@v3
+      #   with:
+      #     node-version: '18'
+      # - name: Build Frontend
+      #   run: |
+      #     cd frontend
+      #     npm install
+      #     npm run build
+      # (Et change le dossier source dans l'étape S3 ci-dessous vers ./frontend/dist ou ./frontend/build)
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Sync to S3
+        # --delete : Supprime les vieux fichiers sur S3 qui ne sont plus dans ton code
+        run: |
+          aws s3 sync ./frontend s3://devsecops-frontend --delete

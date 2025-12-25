@@ -1,0 +1,42 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apps-ingress
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
+      #    traefik.ingress.kubernetes.io/router.middlewares: default-strip-prefix@kubernetescrd
+spec:
+  rules:
+  # Ton domaine DDNS
+  - host: devsecopslab.ddns.net
+    http:
+      paths:
+      # 1. Keycloak (Gère son propre préfixe /auth)
+
+      # 2. Service A
+      - path: /service-a
+        pathType: Prefix
+        backend:
+          service:
+            name: service-a
+            port:
+              number: 80
+
+
+      # 3. Service B
+      - path: /service-b
+        pathType: Prefix
+        backend:
+          service:
+            name: service-b
+            port:
+              number: 80
+
+      # 4. Frontend (Tout le reste)
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80
