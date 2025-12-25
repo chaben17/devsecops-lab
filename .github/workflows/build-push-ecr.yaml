@@ -37,7 +37,7 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:service-b-latest
         
         # Construction et Push du Frontend
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:frontend-latest ./frontend
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:frontend-latest
+       # docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:frontend-latest ./frontend
+       # docker push $ECR_REGISTRY/$ECR_REPOSITORY:frontend-latest
         
         echo "::notice::Images pushed with tag: latest"
