@@ -1,4 +1,5 @@
 name: Deploy Apps to K3s
+run-name: Deploy images from ECR to AWS EC2 K3S
 
 on:
   # 1. Se déclenche si tu touches à la config Kubernetes (ça, ça ne change pas)

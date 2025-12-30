@@ -1,4 +1,5 @@
 name: Build and Push to ECR
+run-name: Build images and Push to AWS ECR
 
 on:
   push:

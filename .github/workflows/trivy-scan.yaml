@@ -1,4 +1,5 @@
 name: Dependency Scan (Trivy)
+run-name: 🛡️ SCA - Trivy Scan on main
 
 on:
   push:
