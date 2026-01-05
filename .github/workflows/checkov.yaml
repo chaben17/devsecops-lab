@@ -1,0 +1,45 @@
+name: IaC Security Scan (Checkov)
+rune-name: Checkov Security Scan
+
+on:
+  push:
+    branches: [ "main"]
+  pull_request:
+
+jobs:
+  iac-scan:
+    name: Checkov IaC
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # Nécessaire pour afficher les résultats dans l'onglet Security
+      actions: read
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Run Checkov
+        id: checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          # ICI c'est la configuration clé pour votre demande :
+          # On ne scanne que Terraform, Kubernetes et la CONFIG du Dockerfile.
+          # On exclut volontairement 'secrets' (géré par Gitleaks) 
+          # et 'sca_package' (géré par Trivy).
+          framework: terraform,kubernetes,dockerfile
+          
+          # Affiche les erreurs dans la console + génère un rapport pour GitHub
+          output_format: cli,sarif
+          output_file_path: console,results.sarif
+          
+          # Mettre à 'true' si vous voulez voir les erreurs sans bloquer la pipeline au début
+          soft_fail: false 
+
+      - name: Upload SARIF file
+        if: success() || failure() # On publie le rapport même si Checkov trouve des erreurs
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: results.sarif
+          category: checkov
