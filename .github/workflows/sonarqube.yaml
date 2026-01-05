@@ -1,4 +1,4 @@
-name: Build
+name: SAST - SonarCLoud Scan
 run-name: 🔍 SAST - SonarCloud Scan
 on:
   push:
