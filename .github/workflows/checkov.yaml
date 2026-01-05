@@ -23,6 +23,7 @@ jobs:
         id: checkov
         uses: bridgecrewio/checkov-action@master
         with:
+          config_file: .checkov.yaml
           directory: .
           # ICI c'est la configuration clé pour votre demande :
           # On ne scanne que Terraform, Kubernetes et la CONFIG du Dockerfile.
