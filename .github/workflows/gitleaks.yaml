@@ -1,0 +1,27 @@
+name: Gitleaks Secret Scan
+run-name: Gitleaks Scan
+
+on:
+  push:
+    branches: [ "main"]
+  pull_request:
+    branches: [ "main"]
+  workflow_dispatch: # Permet de lancer le scan manuellement depuis l'interface GitHub
+
+jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v3
+        with:
+          # TRÈS IMPORTANT : fetch-depth: 0
+          # Gitleaks a besoin de tout l'historique Git pour chercher les secrets
+          # dans les anciens commits, pas seulement dans les fichiers actuels.
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Gitleaks va automatiquement échouer le job si un secret est trouvé.
