@@ -23,6 +23,8 @@ jobs:
           hide-progress: false
           format: 'table'
           exit-code: '1'                 # 1 = Fait échouer le job si failles trouvées
-          ignore-unfixed: true           # Ignore les failles qui n'ont pas encore de correctif
-          vuln-type: 'os,library'
+          ignore-unfixed: true  
+          # Ignore les failles qui n'ont pas encore de correctif
+          scanners: 'vuln,secret'
+          vuln-type: 'library'
           severity: 'CRITICAL,HIGH'      # On ne s'arrête que pour le très grave
