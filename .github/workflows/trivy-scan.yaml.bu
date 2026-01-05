@@ -25,6 +25,6 @@ jobs:
           exit-code: '1'                 # 1 = Fait échouer le job si failles trouvées
           ignore-unfixed: true  
           # Ignore les failles qui n'ont pas encore de correctif
-          scanners: 'vuln,secret'
+          scanners: 'vuln'
           vuln-type: 'library'
           severity: 'CRITICAL,HIGH'      # On ne s'arrête que pour le très grave

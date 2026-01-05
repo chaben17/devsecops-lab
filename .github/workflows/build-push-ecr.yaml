@@ -1,42 +1,82 @@
-name: Build and Push to ECR
-run-name: 🐳 Build images and Push to AWS ECR
+name: Build, Scan and Push to ECR
+run-name: 🐳 Build, 🛡️ Scan & Push
 
 on:
   push:
     branches: [ "main" ]
 
 jobs:
-  build-and-push:
+  build-scan-push:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
-    - name: Build, tag, and push Docker images
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-        IMAGE_TAG: ${{ github.sha }} # On utilise le hash du commit comme version unique
-      run: |
-        # Construction et Push du Service A
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:service-a-latest ./service_a
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:service-a-latest
-        
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:service-b-latest ./service_b
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:service-b-latest
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-        # Construction et Push du Frontend
-        # docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:frontend-latest ./frontend
-        # docker push $ECR_REGISTRY/$ECR_REPOSITORY:frontend-latest
+      # --- SERVICE A ---
+      
+      - name: 🐳 Build Service A
+        id: build-service-a
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        run: |
+          # On construit l'image mais ON NE PUSH PAS ENCORE
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:service-a-latest ./service_a
 
-        echo "::notice::Images pushed with tag: latest"
+      - name: 🛡️ Trivy Scan Service A
+        uses: aquasecurity/trivy-action@master
+        with:
+          # On scanne l'image qu'on vient de construire (disponible dans le cache Docker local)
+          image-ref: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:service-a-latest
+          format: 'table'
+          exit-code: '1'          # Bloque le pipeline si vulnérabilité trouvée
+          ignore-unfixed: true    # Ignore ce qu'on ne peut pas corriger
+          vuln-type: 'os,library' # Scanne l'OS (Alpine/Debian) ET les libs (Pip/Maven)
+          severity: 'CRITICAL,HIGH'
+
+      - name: 🚀 Push Service A
+        # Ne s'exécute que si l'étape précédente (Scan) a réussi
+        if: success() 
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        run: |
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:service-a-latest
+
+      # --- SERVICE B ---
+
+      - name: 🐳 Build Service B
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:service-b-latest ./service_b
+
+      - name: 🛡️ Trivy Scan Service B
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:service-b-latest
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: 🚀 Push Service B
+        if: success()
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        run: |
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:service-b-latest
