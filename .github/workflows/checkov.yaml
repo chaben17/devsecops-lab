@@ -1,5 +1,5 @@
 name: IaC Security Scan (Checkov)
-rune-name: Checkov Security Scan
+run-name: Checkov Security Scan
 
 on:
   push:
