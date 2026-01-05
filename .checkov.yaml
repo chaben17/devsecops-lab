@@ -1,0 +1,17 @@
+# Ne scanner que ce qui nous intéresse
+framework:
+  - terraform
+  - kubernetes
+  - dockerfile
+
+# Ignorer les règles "bruit" (Exemples classiques)
+skip-check:
+  - CKV_AWS_2     # Ignore "Ensure all resources have tags" (Le grand classique des 111 erreurs !)
+  - CKV_AWS_144   # Ignore "Ensure S3 bucket has cross-region replication enabled" (Trop cher pour un lab)
+  - CKV_K8S_21    # Ignore "The default namespace should not be used" (Souvent OK en lab)
+
+# Afficher uniquement les erreurs, pas les tests réussis
+quiet: true
+
+# Optionnel : Ne pas bloquer la pipeline (Soft Fail)
+# soft-fail: true
