@@ -1,4 +1,5 @@
 name: OPA Compliance (Conftest)
+run-as: OPA Compliance (Conftest)
 
 on:
   push:

@@ -16,6 +16,6 @@ spec:
       - name: redis
         # 🚨 ERREUR : Utilisation de 'latest'
         # OPA doit intercepter ceci et faire échouer la pipeline
-        image: redis:latest
+        image: redis:7.2
         ports:
         - containerPort: 6379
