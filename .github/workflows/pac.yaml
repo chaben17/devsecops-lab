@@ -1,0 +1,25 @@
+name: OPA Compliance (Conftest)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+jobs:
+  opa-policy-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Conftest
+        # On installe l'outil CLI qui va lire le Rego
+        run: |
+          wget https://github.com/open-policy-agent/conftest/releases/download/v0.45.0/conftest_0.45.0_Linux_x86_64.tar.gz
+          tar xzf conftest_0.45.0_Linux_x86_64.tar.gz
+          sudo mv conftest /usr/local/bin
+
+      - name: Run OPA Tests
+        # On lance le test sur tous les fichiers YAML du dossier k8s/
+        # -p pointe vers le dossier contenant nos règles .rego
+        run: conftest test k3s-aws/*.yaml -p policy/
