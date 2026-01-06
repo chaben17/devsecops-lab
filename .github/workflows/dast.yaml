@@ -34,6 +34,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Fix permissions for Docker mount
+        # On donne les droits d'écriture à "tout le monde" (y compris l'utilisateur ZAP dans le conteneur)
+        run: chmod -R 777 .
       - name: List files for debug
         if: always()
         run: |
@@ -45,7 +48,7 @@ jobs:
           timeout 180s bash -c 'until curl -sk ${{ matrix.url }}; do sleep 10; done'
 
       - name: 🛡️ OWASP ZAP Baseline Scan - ${{ matrix.name }}
-        uses: zaproxy/action-baseline@v0.12.0
+        uses: zaproxy/action-baseline@v0.15.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target: ${{ matrix.url }}
