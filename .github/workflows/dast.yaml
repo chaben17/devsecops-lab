@@ -46,3 +46,7 @@ jobs:
           # On ignore les alertes de faible niveau pour éviter le bruit
           fail_action: true
           rules_file_name: 'zap-rules.conf'
+          - name: List files for debug
+        run: |
+          ls -R
+          cat zap-rules.conf
