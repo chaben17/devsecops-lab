@@ -1,0 +1,47 @@
+name: 🛡️ DAST - OWASP ZAP Scan
+run-name: 🛡️ DAST - OWASP ZAP Scan
+on:
+  # Se lance après le succès du workflow de déploiement
+  workflow_run:
+    workflows: ["Deploy Apps to K3s"] # Remplacez par le nom exact de votre workflow de déploiement
+    types:
+      - completed
+  # Permet aussi un lancement manuel
+  workflow_dispatch:
+
+jobs:
+  zap_scan:
+    # On ne lance le scan que si le déploiement a réussi
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # Si un scan échoue, les autres continuent
+      matrix:
+        include:
+          - name: "Frontend"
+            url: "https://d2xvxmkp0jsguh.cloudfront.net"  # Remplacez par vos URLs réelles
+          - name: "Service-A"
+            url: "https://devsecopslab.ddns.net/service-a/products"
+          - name: "Service-B"
+            url: "https://devsecopslab.ddns.net/service-b/products/"
+
+    name: Scan ${{ matrix.name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Wait for ${{ matrix.name }} to be ready
+        run: |
+          echo "Attente que l'URL ${{ matrix.url }} soit disponible..."
+          timeout 180s bash -c 'until curl -sk ${{ matrix.url }}; do sleep 10; done'
+
+      - name: 🛡️ OWASP ZAP Baseline Scan - ${{ matrix.name }}
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target: ${{ matrix.url }}
+          # On crée une issue GitHub pour chaque vulnérabilité trouvée
+          issue_title: "Security Alert: DAST Findings for ${{ matrix.name }}"
+          # On ignore les alertes de faible niveau pour éviter le bruit
+          fail_action: true
+          rules_file_name: 'zap-rules.conf'
