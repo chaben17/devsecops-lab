@@ -34,7 +34,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+      - name: List files for debug
+        if: always()
+        run: |
+          echo "Répertoire actuel : $(pwd)"
+          ls -la
       - name: Wait for ${{ matrix.name }} to be ready
         run: |
           echo "Attente que l'URL ${{ matrix.url }} soit disponible..."
