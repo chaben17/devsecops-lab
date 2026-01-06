@@ -10,7 +10,7 @@ on:
 
   # 2. Se déclenche AUTOMATIQUEMENT quand le workflow de Build a fini
   workflow_run:
-    workflows: ["Build and Push to ECR"] # <--- VOIR NOTE CI-DESSOUS
+    workflows: ["Build, Scan and Push to ECR"] # <--- VOIR NOTE CI-DESSOUS
     branches: [main]
     types: 
       - completed
