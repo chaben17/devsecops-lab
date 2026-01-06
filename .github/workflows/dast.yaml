@@ -40,6 +40,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target: ${{ matrix.url }}
+          artifact_name: 'zap_report_${{ matrix.name }}'
           # On crée une issue GitHub pour chaque vulnérabilité trouvée
           issue_title: "Security Alert: DAST Findings for ${{ matrix.name }}"
           # On ignore les alertes de faible niveau pour éviter le bruit
