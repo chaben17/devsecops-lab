@@ -8,6 +8,11 @@ on:
       - completed
   # Permet aussi un lancement manuel
   workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Raison du scan manuel'
+        required: false
+        default: 'Vérification de sécurité ponctuelle'
 
 jobs:
   zap_scan:
@@ -47,6 +52,7 @@ jobs:
           fail_action: true
           rules_file_name: 'zap-rules.conf'
       - name: List files for debug
+        if: always()
         run: |
-          ls -R
-          cat zap-rules.conf
+          echo "Répertoire actuel : $(pwd)"
+          ls -la
