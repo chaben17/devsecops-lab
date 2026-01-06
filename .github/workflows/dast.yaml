@@ -54,7 +54,8 @@ jobs:
           issue_title: "Security Alert: DAST Findings for ${{ matrix.name }}"
           # On ignore les alertes de faible niveau pour éviter le bruit
           fail_action: true
-          rules_file_name: 'zap-rules.conf'
+          cmd_options: '-c zap-rules.conf'
+          # rules_file_name: 'zap-rules.conf'
       - name: List files for debug
         if: always()
         run: |
