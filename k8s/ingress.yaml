@@ -8,8 +8,8 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
 spec:
   rules:
-  - host: devsecops.local
-    http:
+  #- host: devsecops.local
+  - http:
       paths:
       # --- Route API Service A (Reste inchangée) ---
       - path: /service-a(/|$)(.*)
