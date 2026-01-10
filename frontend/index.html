@@ -56,8 +56,10 @@
         const KEYCLOAK_URL = "https://devsecopslab.ddns.net/auth/realms/devsecops/protocol/openid-connect/token";
         
         // URLs des Services via le Domaine Ingress (Routing par chemin)
-        const SERVICE_A_URL = "https://devsecopslab.ddns.net/service-a/products";
-        const SERVICE_B_URL = "https://devsecopslab.ddns.net/service-b/products/";
+        //const SERVICE_A_URL = "https://devsecopslab.ddns.net/service-a/products";
+        const SERVICE_A_URL = "/service-a/products";
+        //const SERVICE_B_URL = "https://devsecopslab.ddns.net/service-b/products/";
+        const SERVICE_B_URL = "/service-b/products/";
 
         async function login() {
             const user = document.getElementById('username').value;
