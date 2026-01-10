@@ -8,8 +8,8 @@ metadata:
 spec:
   rules:
   # Ton domaine DDNS
-  - host: devsecopslab.ddns.net
-    http:
+  #- host: devsecopslab.ddns.net
+  - http:
       paths:
       # 1. Keycloak (Gère son propre préfixe /auth)
 
