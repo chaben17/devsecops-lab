@@ -10,10 +10,10 @@ deny[msg] {
   container := input.spec.template.spec.containers[_]
   
   # 3. On vérifie si l'image se termine par ":latest" ou n'a pas de tag (implicitement latest)
-  endswith(container.image, ":latest")
+  endswith(container.image, "latest")
   
   # 4. Si c'est vrai, on génère ce message d'erreur
-  msg = sprintf("Politique OPA violée : Le conteneur '%s' utilise l'image '%s'. Le tag ':latest' est interdit en production.", [container.name, container.image])
+  msg = sprintf("Politique OPA violée : Le conteneur '%s' utilise l'image '%s'. Le tag 'latest' est interdit en production.", [container.name, container.image])
 }
 
 # Cas particulier : Image sans aucun tag (ex: "nginx") -> c'est considéré comme latest

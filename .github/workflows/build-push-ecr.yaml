@@ -45,14 +45,6 @@ jobs:
           vuln-type: 'os,library' # Scanne l'OS (Alpine/Debian) ET les libs (Pip/Maven)
           severity: 'CRITICAL,HIGH'
 
-      - name: 🚀 Push Service A
-        # Ne s'exécute que si l'étape précédente (Scan) a réussi
-        if: success() 
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-        run: |
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:service-a-latest
 
       # --- SERVICE B ---
 
@@ -72,6 +64,15 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+
+      - name: 🚀 Push Service A
+        # Ne s'exécute que si l'étape précédente (Scan) a réussi
+        if: success() 
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        run: |
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:service-a-latest
 
       - name: 🚀 Push Service B
         if: success()
